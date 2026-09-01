@@ -1,0 +1,40 @@
+# Local Postgres for the integration suite (`pnpm run test:integration`). The app
+# itself runs against Neon; this exists so the `src/lib/db` queries can be tested
+# against a real Postgres instead of a mock. The CI workflow starts an equivalent
+# instance as a service container rather than using this file — keep the two in
+# step, starting with the image tag.
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # The `_test` suffix is load-bearing, not decoration. `support/guard.ts`
+      # requires this exact database name, so the suite cannot TRUNCATE a
+      # database that merely happens to be on localhost.
+      POSTGRES_DB: personal_finance_demo_test
+    ports:
+      # 5433, not 5432, so this never collides with a Postgres the developer
+      # already runs locally. Combined with the database name above, a stray
+      # local server is unreachable from the suite by construction.
+      #
+      # Fixed rather than overridable: `vitest.integration.config.mts` hardcodes
+      # the connection string, so a port set only here would leave the suite
+      # dialing the wrong one. If 5433 is taken, change both.
+      - '5433:5432'
+    volumes:
+      # Postgres 18 wants the mount one level up from the 17-and-earlier
+      # convention of /var/lib/postgresql/data — it stores data in a
+      # major-version subdirectory now, and refuses to start against a volume
+      # mounted at the old path. See docker-library/postgres#1259.
+      - personal-finance-demo-db:/var/lib/postgresql
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U postgres -d personal_finance_demo_test']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  personal-finance-demo-db:

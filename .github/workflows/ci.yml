@@ -1,0 +1,188 @@
+name: CI
+
+# Catches regressions before they reach main: `tsc --noEmit`, the Vitest unit
+# suite, eslint, and a prettier check. The production build and
+# `prisma migrate deploy` are Vercel's job, so neither runs here. `pnpm run ci`
+# runs the same checks locally.
+on:
+  pull_request:
+  # Branch work is already checked on its PR, so the push trigger covers only
+  # main — the merge commit, or a direct push. Without the branch filter every
+  # PR commit would be checked twice, once per event.
+  push:
+    branches: [main]
+
+# One in-flight run per branch. A superseded PR run is cancelled since its result
+# is already stale; runs on main are left to finish.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Read-only, and deliberately so: nothing here writes back to the repository.
+# A formatting problem is reported rather than fixed and pushed (see the last
+# step), which keeps the token that installs and runs repo code — including any
+# dependency's postinstall script — unable to commit anything.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Before setup-node, deliberately: `cache: pnpm` resolves the store
+      # directory by shelling out to pnpm, so pnpm has to already be on PATH.
+      # The version comes from `packageManager` in package.json.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The Prisma client and next-env.d.ts / .next/types are gitignored and
+      # written by commands that don't run here, so without this step tsc and
+      # eslint report failures that only exist on the runner — and prettier's
+      # organize-imports plugin, which drives the TypeScript language service,
+      # sees different imports than it does locally.
+      - name: Generate Prisma client and Next.js types
+        run: pnpm run generate
+
+      # Ordered so the fastest, most fundamental failure surfaces first: a step
+      # failure ends the job, so time-to-red is the ordering criterion. tsc is
+      # quicker than eslint, and a type error is the more basic thing to be
+      # wrong.
+      - name: Type check
+        run: pnpm run typecheck
+
+      # Unit tests only (`test/unit/**`). They are pure-function tests, so they
+      # need neither a database nor any of the app's env vars — the cipher
+      # specs generate their own throwaway keys.
+      - name: Test
+        run: pnpm test
+
+      - name: Lint
+        run: pnpm run lint
+
+      # Warn, don't fail: `pnpm run format` fixes it in one command, and fixing
+      # it here instead would mean giving this job write access. It can't fail
+      # the run, so `!cancelled()` lets it report even after a red step above.
+      - name: Check formatting
+        if: ${{ !cancelled() }}
+        run: |
+          if output=$(pnpm run format:check 2>&1); then
+            echo "$output"
+            exit 0
+          fi
+
+          echo "$output"
+
+          # prettier lists each unformatted file on its own `[warn] path` line,
+          # colorized — the package manager hands the child a FORCE_COLOR of its
+          # own — so the escape codes are stripped before parsing.
+          files=$(echo "$output" \
+            | sed 's/\x1b\[[0-9;]*m//g' \
+            | sed -n 's/^\[warn\] \(.*\)$/\1/p' \
+            | grep -v 'Code style issues' || true)
+          count=$(echo "$files" | grep -c . || true)
+
+          echo "::warning title=Formatting::$count file(s) are not formatted. Run \`pnpm run format\` to fix."
+
+          {
+            echo '### Formatting'
+            echo
+            echo "$count file(s) need prettier. Run \`pnpm run format\` and commit the result."
+            echo
+            echo '```'
+            echo "$files"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # A separate job, not extra steps on `checks`: this one needs a database and
+    # takes minutes to start one, and a type error should still go red in
+    # seconds. They run in parallel.
+    services:
+      postgres:
+        # Keep in step with compose.yaml — same image tag, same credentials,
+        # same database name. `vitest.integration.config.mts` hardcodes a
+        # connection string that has to match both.
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: personal_finance_demo_test
+        ports:
+          - '5433:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres -d personal_finance_demo_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Before setup-node, deliberately: `cache: pnpm` resolves the store
+      # directory by shelling out to pnpm, so pnpm has to already be on PATH.
+      # The version comes from `packageManager` in package.json.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm run prisma:generate
+
+      # No DATABASE_URL / DIRECT_URL in this job's env, deliberately. The suite
+      # supplies its own hardcoded local values and `test/integration/support/
+      # guard.ts` refuses anything else, so setting them here would only create
+      # a way for the wrong one to be set.
+      #
+      # The Plaid values are the opposite case: they cannot be hardcoded, so
+      # they come from repository configuration. A fork or Dependabot PR cannot
+      # read those, which leaves them empty — and the Plaid specs then skip via
+      # `hasPlaidCredentials()` rather than failing. The database specs still
+      # run. **Only ever set the sandbox secret here**; `assertPlaidSandbox`
+      # refuses to run if a production credential is present at all.
+      #
+      # Note the two different contexts. `PLAID_CLIENT_ID` is an identifier, not
+      # a credential, so it is a repository *variable* (`vars.`) and stays
+      # readable in this log — which is how a wrong or whitespace-padded value
+      # gets spotted. `PLAID_SANDBOX_SECRET` is a real credential, so it is a
+      # *secret* (`secrets.`) and GitHub masks it. Keep the distinction: the
+      # presence of a Plaid secret is something `assertPlaidSandbox` reasons
+      # about, so "secret" needs to keep meaning "grants access to an account".
+      #
+      # `PLAID_REDIRECT_URI` is deliberately absent. `link-token.ts` falls back
+      # to `http://localhost:3000`, which is registered for this client, so it
+      # is not needed — and adding it back would be actively harmful: an unset
+      # secret expands to the empty string, and `??` does not fall back on `''`,
+      # so Plaid would receive `redirect_uri: ""` and reject it.
+      - name: Integration tests
+        run: pnpm run test:integration
+        env:
+          PLAID_CLIENT_ID: ${{ vars.PLAID_CLIENT_ID }}
+          PLAID_SANDBOX_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}

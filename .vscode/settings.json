@@ -1,0 +1,29 @@
+{
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
+
+  // App Router names files by convention, so the editor fills with same-named
+  // tabs. Label each with its enclosing folders to tell them apart.
+  // https://nextjs.org/docs/app/getting-started/installation#set-up-your-editor
+  //
+  // Two folders deep, so dynamic segments do not all collapse to `[id]`.
+  "workbench.editor.customLabels.patterns": {
+    "**/app/**/page.tsx": "${dirname(1)}/${dirname} - page.tsx",
+    "**/app/**/layout.tsx": "${dirname(1)}/${dirname} - layout.tsx",
+    "**/app/**/loading.tsx": "${dirname(1)}/${dirname} - loading.tsx",
+    "**/app/**/error.tsx": "${dirname(1)}/${dirname} - error.tsx",
+    "**/app/**/not-found.tsx": "${dirname(1)}/${dirname} - not-found.tsx",
+    "**/app/**/template.tsx": "${dirname(1)}/${dirname} - template.tsx",
+    "**/app/**/default.tsx": "${dirname(1)}/${dirname} - default.tsx",
+    "**/app/**/route.ts": "${dirname(1)}/${dirname} - route.ts",
+
+    // The co-located debug zone repeats these two per resource.
+    "**/app/**/actions.ts": "${dirname(1)}/${dirname} - actions.ts",
+    "**/app/**/db.ts": "${dirname(1)}/${dirname} - db.ts",
+
+    // Not App Router, but the same collision: `src/lib/db/account.ts` and
+    // `src/lib/actions/account.ts` are deliberately named alike, one per
+    // resource, and the pairing is the whole point of the data layer.
+    "**/src/lib/db/*.ts": "db/${filename}.ts",
+    "**/src/lib/actions/*.ts": "actions/${filename}.ts"
+  }
+}

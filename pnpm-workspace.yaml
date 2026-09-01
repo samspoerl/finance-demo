@@ -1,0 +1,27 @@
+# pnpm's settings file. Not a workspace declaration — this is a single-package
+# repo — but pnpm 11 no longer reads the `pnpm` field in package.json, so this
+# is the only place these settings are honoured; putting them back there fails
+# silently, with one warning.
+
+# pnpm does not run a dependency's install scripts unless it is allowed here.
+# Every entry fetches a platform binary the toolchain genuinely needs — Prisma's
+# query engine, esbuild (vitest, tsx), and unrs-resolver (eslint-config-next).
+# npm ran all of these unconditionally, so an explicit allowlist is the stricter
+# setting, not a looser one. An entry grants arbitrary code execution at install
+# time; don't add one without knowing why that package needs a build step.
+#
+# `pnpm import` rewrites this block, adding any newly-blocked package with a
+# placeholder string instead of a boolean. Replace it with true/false — a
+# placeholder left in place silently blocks the build it is asking about.
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  unrs-resolver: true
+
+# Carried over from npm's top-level `overrides`, which pnpm does not read.
+# Neither package is in the tree today, so these are inert — kept so the floor
+# still applies if a transitive dependency reintroduces them.
+overrides:
+  '@hono/node-server': '>=1.19.10'
+  hono: '>=4.12.7'

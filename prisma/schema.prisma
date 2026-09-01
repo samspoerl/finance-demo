@@ -1,0 +1,289 @@
+// Personal finance demo — Plaid sandbox only.
+//
+// Two id conventions, deliberately: Better Auth owns `User`, `Session`,
+// `UserAccount` and `Verification` and generates string ids for them; everything
+// else is app-owned and keeps `Int @default(autoincrement())`. The `cuid()`
+// defaults are only a fallback for rows created directly through Prisma (the
+// integration factories) — Better Auth supplies its own id on rows it writes.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String  @id @default(cuid())
+  name          String
+  email         String  @unique
+  emailVerified Boolean @default(false)
+  image         String?
+
+  // Declared by Better Auth's anonymous plugin, which writes `true` on
+  // anonymous sign-in. The default matches the plugin's, not the app's reality:
+  // a row created by a factory or seed did not come through that flow.
+  isAnonymous Boolean @default(false)
+
+  // Auth relations
+  sessions     Session[]
+  userAccounts UserAccount[]
+
+  // App relations
+  accounts     Account[]
+  balances     Balance[]
+  transactions Transaction[]
+  connections  Connection[]
+  holdings     Holding[]
+
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  // The purge job's TTL anchor. Better Auth already bumps `updatedAt` on its
+  // `updateAge` schedule, so no app code has to maintain it. Not `expiresAt`,
+  // which says when to stop trusting the session, not when the user was here.
+  @@index([updatedAt])
+  @@map("sessions")
+}
+
+model UserAccount {
+  id String @id @default(cuid())
+
+  // Added by Better Auth 1.7: `local:credential` or `local:oauth:<provider>`.
+  // Both sign-in paths match on (issuer, accountId), so a null here means the
+  // account is invisible to them and the user cannot sign in.
+  issuer                String
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([issuer, accountId])
+  @@index([userId])
+  @@map("user_accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+model Connection {
+  id                        Int          @id @default(autoincrement())
+  plaidItemId               String       @unique
+  plaidAccessToken          String
+  encryptionKeyId           String?
+  plaidEnv                  PlaidEnvType
+  plaidInstitutionId        String?
+  institutionId             Int?
+  userId                    String
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+  plaidErrorCode            String?
+  plaidNewAccountsAvailable Boolean      @default(false)
+  plaidWebhookUrl           String?
+  transactionsCursor        String?
+  accounts                  Account[]
+  balances                  Balance[]
+  institution               Institution? @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  user                      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings                  Holding[]
+
+  transactions Transaction[]
+
+  @@unique([userId, institutionId])
+  @@index([userId])
+  @@map("connections")
+}
+
+model Account {
+  id             Int          @id @default(autoincrement())
+  plaidAccountId String?
+  name           String?
+  mask           String?
+  type           String?
+  subtype        String?
+  userId         String
+  connectionId   Int?
+  institutionId  Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  connectionType SourceType?
+  connection     Connection?  @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution    Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  balances     Balance[]
+  transactions Transaction[]
+  holdings     Holding[]
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Balance {
+  id           Int         @id @default(autoincrement())
+  balance      Float
+  asOfDate     DateTime
+  userId       String
+  connectionId Int?
+  accountId    Int
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  source       SourceType
+  account      Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  connection   Connection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("balances")
+}
+
+model Category {
+  id            Int    @id @default(autoincrement())
+  plaidPrimary  String
+  plaidDetailed String @unique
+  category      String
+  subcategory   String
+
+  transactions Transaction[]
+
+  @@index([plaidPrimary])
+  @@map("categories")
+}
+
+model Transaction {
+  id                  Int             @id @default(autoincrement())
+  amount              Float
+  authorizedDate      String?
+  date                String
+  description         String
+  originalDescription String?
+  merchantName        String?
+  type                TransactionType @default(expense)
+  plaidTransactionId  String?         @unique
+  metadata            Json?
+  source              SourceType
+
+  // Parent relations
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connectionId Int?
+  connection   Connection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  accountId    Int
+  account      Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId   Int?
+  category     Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, accountId])
+  @@index([accountId, date])
+  @@map("transactions")
+}
+
+model Institution {
+  id                   Int          @id @default(autoincrement())
+  name                 String?
+  plaidInstitutionId   String?      @unique
+  plaidInstitutionName String?
+  plaidInstitutionLogo String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  connections          Connection[]
+  accounts             Account[]
+
+  @@index([plaidInstitutionId])
+  @@map("institutions")
+}
+
+model Security {
+  id               Int       @id @default(autoincrement())
+  plaidSecurityId  String?
+  name             String?
+  type             String?
+  tickerSymbol     String?
+  isCashEquivalent Boolean?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  holdings         Holding[]
+
+  @@map("securities")
+}
+
+/// A security held in an investment account, as of a date.
+///
+/// Descriptive only: an account's value always comes from `Balance`, never from
+/// summing holdings. Holdings say what is in the account, balances say what it
+/// is worth, and neither is derived from the other.
+model Holding {
+  id           Int         @id @default(autoincrement())
+  value        Float
+  asOfDate     DateTime
+  userId       String
+  connectionId Int?
+  accountId    Int
+  securityId   Int
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  account      Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  connection   Connection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  security     Security    @relation(fields: [securityId], references: [id], onDelete: Restrict)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, asOfDate])
+  @@map("holdings")
+}
+
+enum PlaidEnvType {
+  sandbox
+  production
+}
+
+enum SourceType {
+  plaid
+  manual
+}
+
+enum TransactionType {
+  income
+  expense
+  excluded
+}
