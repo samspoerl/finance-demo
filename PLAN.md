@@ -193,6 +193,7 @@ files), the `(auth)` route group and all dev-auth, sidebar + breadcrumb +
    the purge job deleted is permanently stuck on a dead page; and the replayed
    cookie must **replace** a same-named stale cookie rather than being appended
    after it, since Better Auth reads the first occurrence.
+
 2. Scaffold — configs, `.github/`, MIT, squashed schema, `.mcp.json`,
    `seed-categories`.
 3. Data layer — `lib/db`, `lib/plaid`, `lib/actions`, `session.ts`, `errors.ts`.
