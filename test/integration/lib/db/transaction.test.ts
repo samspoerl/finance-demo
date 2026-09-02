@@ -170,3 +170,49 @@ describe('updateTransaction', () => {
     expect(result.description).toBe('Theirs')
   })
 })
+
+describe('getTransactionsForHistory', () => {
+  it('returns raw Plaid-convention amounts, not the display-flipped ones', async () => {
+    await createTransaction(owner.id, ownerAccount.id, {
+      amount: 40,
+      date: '2026-03-10',
+    })
+
+    const [raw] = await db.getTransactionsForHistory(
+      owner.id,
+      new Date('2026-01-01')
+    )
+    const [displayed] = await db.getRecentTransactions(owner.id)
+
+    // The whole point of this function: the two disagree, deliberately.
+    expect(raw.amount).toBe(40)
+    expect(displayed.amount).toBe(-40)
+  })
+
+  it('excludes transactions before the cutoff', async () => {
+    await createTransaction(owner.id, ownerAccount.id, { date: '2025-12-31' })
+    await createTransaction(owner.id, ownerAccount.id, { date: '2026-01-02' })
+
+    const rows = await db.getTransactionsForHistory(
+      owner.id,
+      new Date('2026-01-01')
+    )
+
+    expect(rows.map((r) => r.date)).toEqual(['2026-01-02'])
+  })
+
+  it("never returns another user's transactions", async () => {
+    await createTransaction(owner.id, ownerAccount.id, { date: '2026-02-01' })
+    await createTransaction(stranger.id, strangerAccount.id, {
+      date: '2026-02-01',
+    })
+
+    const rows = await db.getTransactionsForHistory(
+      owner.id,
+      new Date('2026-01-01')
+    )
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0].accountId).toBe(ownerAccount.id)
+  })
+})

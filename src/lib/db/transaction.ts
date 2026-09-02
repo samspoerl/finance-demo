@@ -92,6 +92,29 @@ export async function getAllTransactions(userId: string, page: number) {
   }
 }
 
+/**
+ * The ledger behind the reconstructed net worth chart, from `since` onward.
+ *
+ * **Returns raw Plaid-convention amounts — positive is money leaving the
+ * account — unlike every other read in this file, which flips the sign for
+ * display.** `reconstructNetWorthHistory` runs the account arithmetic in
+ * reverse and expects the convention the balances were produced under. Flipping
+ * here to match its neighbours would invert the whole chart, silently and
+ * smoothly.
+ */
+export async function getTransactionsForHistory(userId: string, since: Date) {
+  return prisma.transaction.findMany({
+    select: { accountId: true, date: true, amount: true },
+    where: {
+      userId,
+      // `date` is a `YYYY-MM-DD` string, which sorts and compares lexically in
+      // exactly the same order as chronologically.
+      date: { gte: since.toISOString().slice(0, 10) },
+    },
+    orderBy: { date: 'desc' },
+  })
+}
+
 /** Shared reference data — the one function here with no `userId`. */
 export async function getCategories() {
   return prisma.category.findMany({
