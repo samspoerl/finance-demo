@@ -1,0 +1,59 @@
+name: Purge idle demo data
+
+# Deletes demo users idle beyond the TTL and revokes their Plaid sandbox items.
+# The endpoint owns the TTL and all the logic; this workflow only decides when.
+#
+# GitHub Actions rather than Vercel Cron so the schedule lives in the repo
+# alongside the code it calls, and so the demo does not depend on a platform
+# feature that varies by plan.
+on:
+  schedule:
+    - cron: '0 8 * * *' # 08:00 UTC — off-peak for a US audience
+  workflow_dispatch:
+
+# Nothing here reads or writes the repository.
+permissions: {}
+
+concurrency:
+  group: purge
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    name: Purge
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # No checkout: this is one authenticated request, so cloning the repo
+      # would only widen what the job can touch.
+      - name: Call the purge endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          PURGE_SECRET: ${{ secrets.PURGE_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${APP_URL:-}" ] || [ -z "${PURGE_SECRET:-}" ]; then
+            echo "::error::APP_URL variable or PURGE_SECRET secret is not configured"
+            exit 1
+          fi
+
+          # --fail-with-body so a non-2xx is a failed step but the response body
+          # still reaches the log; without it curl exits silently on an error
+          # status and the reason is lost.
+          response=$(curl --silent --show-error --fail-with-body \
+            --max-time 300 \
+            --request POST \
+            --header "Authorization: Bearer ${PURGE_SECRET}" \
+            "${APP_URL%/}/api/purge")
+
+          echo "$response"
+
+          {
+            echo '### Purge'
+            echo
+            echo '```json'
+            echo "$response"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
