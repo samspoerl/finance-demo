@@ -23,7 +23,7 @@ export function NetWorthSection({ netWorth, series }: NetWorthSectionProps) {
           Net worth
         </span>
         <div className="flex items-baseline gap-3">
-          <span className="text-foreground-strong tabular font-display text-[40px] leading-none font-bold tracking-tight">
+          <span className="text-foreground-strong tabular font-display text-3xl leading-none font-bold tracking-tight">
             {formatBalance(netWorth)}
           </span>
           {series.length > 1 && (
