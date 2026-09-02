@@ -194,18 +194,32 @@ files), the `(auth)` route group and all dev-auth, sidebar + breadcrumb +
    cookie must **replace** a same-named stale cookie rather than being appended
    after it, since Better Auth reads the first occurrence.
 
-2. Scaffold — configs, `.github/`, MIT, squashed schema, `.mcp.json`,
-   `seed-categories`.
-3. Data layer — `lib/db`, `lib/plaid`, `lib/actions`, `session.ts`, `errors.ts`.
-   Port unit + integration tests; rename the test database to
-   `personal_finance_demo_test` in `compose.yaml`,
-   `test/integration/support/guard.ts`, `vitest.integration.config.mts`, and
-   `ci.yml` (it is a TRUNCATE safety guard — all four must agree).
-4. `lib/utils/net-worth-history.ts` — the backward walk. Tests first.
-5. UI, per the component rules.
-6. Purge workflow + reset path.
+2. ~~Scaffold~~ — done.
+3. ~~Data layer~~ — done. `lib/db`, `lib/plaid`, `lib/actions`, `session.ts`,
+   `errors.ts`, plus the webhook handler and the purge endpoint. 260 unit and 81
+   integration tests pass; the integration suite runs against real Postgres and
+   the real Plaid sandbox.
+4. ~~`net-worth-history.ts`~~ — done, tests first, 15 of them.
+5. **UI, per the component rules. ← next**
+6. ~~Purge workflow~~ — done, shipped with step 3. A reset-my-data control is
+   still outstanding.
 7. `AGENTS.md` / `README.md`; delete this file.
 8. PostHog — page views, basic logs/metrics. Anonymous. **No session replay.**
+
+## Carried forward
+
+Things deferred with a reason, so they are not quietly lost:
+
+- **`handle-server-result.ts`** is not ported. It depends on `sonner`, which was
+  dropped in favour of Base UI's Toast, so it lands with the toast primitive.
+- **A "reset my demo data" control.** The purge covers abandonment; this covers
+  a visitor who wants a clean slate now. `db.deleteUsers` already does the work.
+- **The chart's flat-line caveat.** Accounts with no ledger hold flat across the
+  window. The UI has to say so rather than implying the whole line is measured.
+- **Two security fixes** made during the port, both because the audience changed
+  from trusted household users to anonymous strangers: `resetItemErrorCode` is
+  now scoped by `userId`, and `updateTransaction` parses its payload with a
+  strict Zod schema.
 
 ## Deferred
 
