@@ -1,240 +1,311 @@
-# Build plan — personal finance demo
+# Build plan — Personal Finance App Demo
 
 A public, sandbox-only demo of a private predecessor app, built for a
 portfolio: full-stack Next.js with a real third-party API integration (Plaid).
 
-This file is scaffolding for the build. It is **not** a permanent repo document —
-once the app works, its durable content moves into `AGENTS.md` and `README.md`
-and this file is deleted.
+**This file is scaffolding for the build, not a permanent repo document.** Once
+the app is finished its durable content moves into `AGENTS.md` and `README.md`
+and this file is deleted. Until then it is the handover: everything needed to
+pick this up cold is here.
 
-## Why a separate repo
+## Where this stands
 
-- The private app stays private so it can ship rough code without an audience.
-- This is not a business. A public _demo_ carries none of the operational or
-  regulatory risk of running a production financial app.
-- Consequently: **Plaid sandbox only**, no real financial data, ever.
+The app **works end to end** and is committed in ten commits on `main`. The
+backend is done; the UI is built and rendering real Plaid sandbox data.
+
+| Check                       | State                                                  |
+| --------------------------- | ------------------------------------------------------ |
+| `pnpm run typecheck`        | green                                                  |
+| `pnpm run lint`             | green                                                  |
+| `pnpm run format:check`     | green                                                  |
+| `pnpm test` (unit)          | 290 passing                                            |
+| `pnpm run test:integration` | 81 passing, against real Postgres + real Plaid sandbox |
+| `pnpm run build`            | green                                                  |
+
+**Not yet verified: how it actually looks.** The Chrome extension was not
+connected during the build, so no screenshot was ever taken. The DOM was checked
+for the right sections and figures and the production build passes, but layout
+problems — collisions, overflow, a chart rendering wrong, dark mode reading badly
+— would not show up in any of that. **A visual pass in light and dark is the
+first thing to do.**
+
+## Running it
+
+Prerequisites: `.env` is already filled in (git-ignored; Neon dev database,
+Plaid sandbox credentials, generated secrets). Docker is needed only for the
+integration suite.
+
+```bash
+pnpm install
+pnpm run generate     # prisma client + next types
+pnpm dev              # http://localhost:3000
+
+pnpm run db:up            # local Postgres for the integration suite
+pnpm run test:integration
+pnpm run ci               # everything CI runs
+```
+
+The Neon dev database already holds one demo user with a seeded Plaid sandbox
+connection — 14 accounts, 48 transactions, 13 holdings — so the populated page
+renders without clicking through Link. It also holds ~25 throwaway users from
+spike testing; they are harmless and the purge will reap them.
+
+A browser that already has a session cookie will reuse it. To see the **empty
+state**, open a private window.
+
+## Outstanding work
+
+In rough order:
+
+1. **Visual pass, light and dark.** See above. Nothing else should be built on
+   top of an unlooked-at UI.
+2. **Manual account CRUD.** The whole data layer exists —
+   `createManualAccount` / `updateAccount` / `deleteManualAccount` actions, and
+   `getInstitutions` for the institution picker — but there is no form. This is
+   the "Add manual account" button in `AccountsSection` and the "Add manually"
+   button on the empty state, both of which currently do nothing.
+3. **Reset-my-data control.** `db.deleteUsers` already does the work; this needs
+   an action and a confirm dialog. It is in the design's header but not the code.
+4. **`AGENTS.md` and `README.md`**, then delete this file.
+5. **PostHog** — page views, basic logs and metrics, all anonymous.
+   **No session replay.** `src/lib/errors.ts` is the single seam it plugs into.
+6. **Webhook demo trigger** (deferred by choice). Sandbox items only fire
+   webhooks when poked via `/sandbox/item/fire_webhook`. A "simulate a bank
+   update" control would make the webhook path visible to a portfolio viewer
+   instead of invisible infrastructure.
+7. **Seeded demo data** (deferred by choice, pending the live look at the empty
+   state).
+
+### Before deploying
+
+- Vercel project, pointed at a **new production Neon database**.
+- Environment variables per `.env.example`. `PLAID_ENV` must be `sandbox` —
+  `plaid/client.ts` throws on anything else, deliberately.
+- `ENABLE_EXPERIMENTAL_COREPACK=1` in Vercel, or the install fails with a
+  misleading pnpm error. See `.env.example` for why.
+- Repository **variable** `APP_URL` and repository **secret** `PURGE_SECRET`, or
+  the nightly purge workflow does nothing.
+- `PLAID_WEBHOOK_URI` pointing at the deployed domain, and that URL registered in
+  the Plaid dashboard along with `PLAID_REDIRECT_URI`.
+- Once green, copy this repo to its public home. This
+  staging repo exists so the public one carries no history from the private app.
 
 ## Decisions
 
-| Area          | Decision                                                                                                 |
-| ------------- | -------------------------------------------------------------------------------------------------------- |
-| Auth          | Better Auth **anonymous plugin**. String user ids, Better Auth–delegated.                                |
-| Routing       | One page. No sidebar, no route groups, no other routes.                                                  |
-| Page content  | KPI row, net-worth chart, accounts grouped by category with rollups, Plaid Link, transactions, holdings. |
-| Seed data     | None. Empty state, pending live testing.                                                                 |
-| Manual entry  | Plaid **and** manual accounts (full CRUD).                                                               |
-| Transactions  | List, plus recategorize / flip `TransactionType`.                                                        |
-| Holdings      | Descriptive only. `Balance` is the sole source of account value.                                         |
-| Chart history | Derived backward from transactions.                                                                      |
-| Write path    | `revalidatePath`.                                                                                        |
-| Lifecycle     | Nightly GitHub Actions purge, 7-day idle TTL.                                                            |
-| Observability | `console.log` / `console.error` behind one seam. No Sentry. PostHog deferred.                            |
-| License       | MIT                                                                                                      |
-| UI            | Bespoke, on Base UI primitives. No shadcn.                                                               |
-
-### Naming
-
-Settled: **Personal Finance App Demo**. Package name stays
-`personal-finance-demo`; `client_name` in `lib/plaid/link-token.ts` (visible
-inside the Plaid Link modal) uses the display name.
+| Area          | Decision                                                            |
+| ------------- | ------------------------------------------------------------------- |
+| Name          | **Personal Finance App Demo**; package `personal-finance-demo`      |
+| Auth          | Better Auth **anonymous plugin**. String ids, Better Auth–generated |
+| Routing       | One page. No sidebar, no route groups, no other routes              |
+| Manual entry  | Plaid **and** manual accounts (CRUD not yet built)                  |
+| Transactions  | List, plus recategorize / flip `TransactionType`                    |
+| Holdings      | Descriptive only. `Balance` is the sole source of account value     |
+| Chart history | Reconstructed backward from the transaction ledger                  |
+| Write path    | `revalidatePath('/')`                                               |
+| Lifecycle     | Nightly GitHub Actions purge, 7-day idle TTL                        |
+| Observability | `console` behind one seam. No Sentry. PostHog deferred              |
+| License       | MIT                                                                 |
+| UI            | Bespoke, Base UI primitives, Tailwind `stone`, `next-themes`        |
 
 ## Architecture
-
-Carried over from the private app, because it is the part worth showing:
 
 ```
 src/
 ├── proxy.ts                  # creates the anonymous session; only place that can
 ├── app/
-│   ├── page.tsx              # the single page
-│   ├── layout.tsx            # + icon.tsx, apple-icon.tsx, global-error.tsx,
-│   │                         #   globals.css, global-providers.tsx
+│   ├── page.tsx              # the single page — server-rendered composition
+│   ├── layout.tsx            # fonts, ThemeProvider, Toaster
+│   ├── globals.css           # the token system
 │   └── api/
 │       ├── auth/[...all]/    # Better Auth
 │       ├── plaid-webhook-handler/
 │       └── purge/            # authenticated, called by GitHub Actions
-├── components/               # see "Component rules" below
+├── components/               # see "Component rules"
+├── hooks/
+│   └── use-server-action.ts  # runs an action, surfaces its failure
 └── lib/
-    ├── auth/
-    │   ├── index.ts          # server-side Better Auth config
-    │   └── client.ts         # browser-side; no Prisma
+    ├── auth/{index,client}.ts
     ├── session.ts            # getSession / requireUser
     ├── db/                   # pure Prisma; userId is a parameter
     ├── actions/              # 'use server' adapters over db/ and plaid/
     ├── plaid/                # all Plaid I/O; plain functions, no session
     ├── utils/                # pure functions
     ├── errors.ts             # the one logging seam
-    ├── server-result.ts      # ServerResult<T> + ok/err
+    ├── server-result.ts
     └── select-schemas.ts
 ```
 
-The four `eslint.config.mjs` boundary rules come across intact, because they are
-what make the layering real rather than aspirational:
+Three `eslint.config.mjs` rules make the layering real rather than aspirational,
+and they are why the structure holds:
 
 1. Only `src/app/**` and `src/lib/actions/**` may import `lib/db` or `lib/plaid`
    at runtime (type-only imports allowed).
 2. `'use server'` may only appear in `src/lib/actions/**`.
-3. `lib/db` and `lib/plaid` must each declare `server-only` (local plugin rule).
-4. (The `/debug` seal is dropped along with the `/debug` zone.)
+3. `lib/db` and `lib/plaid` must each declare `server-only` — a local rule,
+   because no stock rule asserts an import is _present_.
 
-### Component rules
+Each db module is imported as `import * as db`. Actions and db modules pair one
+to one by resource, so the namespace never collides; an action needing two would
+be a sign it straddles two resources.
+
+## Component rules
 
 New components default to the last bucket and earn their way out.
 
 - **`ui/`** — primitives. The bar: _would this exist, unchanged, in a completely
   different app?_ A primitive absorbs variation as props, not sibling files.
-- **`icons/`** — SVG marks lucide doesn't ship. A kind, not a usage tier.
+  Currently `Button`, `Card`, `Toast`.
+- **`icons/`** — SVG marks lucide doesn't ship. A kind, not a usage tier. Empty.
 - **`shared/`** — the _exact same_ UI in two or more resources. Strict; this is
-  the only thing between `shared/` and a junk drawer. Expect it to start empty.
+  the only thing between `shared/` and a junk drawer. **Currently empty, and
+  correctly so** — nothing yet repeats.
 - **Concern directories** — only when the concern already exists in `lib/`.
-- **Everything else** — bespoke, grouped by resource.
+- **Everything else** — bespoke, grouped by resource: `accounts/`, `holdings/`,
+  `nav/`, `netWorth/`, `onboarding/`, `plaid/`, `summary/`, `theme/`,
+  `transactions/`.
 
-Prefer plain markup to a wrapper. Extract on the second or third real use, not
-in anticipation. Repeated Tailwind strings are not a reason to abstract; a
-repeated _behavior_ is.
+Prefer plain markup to a wrapper. Extract on the second or third real use, not in
+anticipation. Repeated Tailwind strings are not a reason to abstract; a repeated
+_behaviour_ is. (`Stat` inside `SummarySection` is the worked example — used five
+times on one screen and deliberately not promoted.)
 
 `'use client'` goes at the lowest component owning mutable state or touching a
 browser API — never at the level that fetches, because nothing fetches on the
-client. Server data crosses as props: `initial*` when the client will mutate it,
-plain when it won't.
+client. There are exactly three client boundaries: `ThemeToggle`,
+`NetWorthChart` (period selector), `TransactionCategoryMenu`.
 
 **Base UI** is for widgets with correctness you can't see — dismissal, focus
 return, viewport-edge positioning, ARIA. A `<button onClick>` has no invisible
-half; hand-roll it. Import from the subpath (`@base-ui/react/popover`), put
-Tailwind classes directly on the parts, and remember popups portal to `<body>`.
+half; hand-roll it. Import from the subpath (`@base-ui/react/menu`), put Tailwind
+classes on the parts, and remember popups portal to `<body>`.
 
-## Schema
+**Comment verbosity is medium.** Comment where something is non-obvious or where
+an explicit decision was made — a constraint that looks removable but isn't, an
+ordering that matters, a shape chosen over the more natural one. No inline
+essays. The private app's comments are much heavier; trim when porting.
 
-Starting point is the private app's `prisma/schema.prisma`, with:
+## The token system
 
-**Dropped:** `Household`, `HouseholdMember`, `AccountShare`. Fallout:
-`calculateAdjustedBalance` loses `ownershipShare` and collapses into
-`normalizeBalance`; `lib/db/household.ts` and its tests go; `getNetWorthHistory`
-stops widening past the one user.
+`src/app/globals.css`. Structure and naming follow
+another private project of mine; the palette is Tailwind `stone` rather
+than `zinc`, which is warmer and where this design already sat.
 
-**Changed:** `User.id` → `String @id`, Better Auth–generated. Same for
-`Session`, `UserAccount`, `Verification`. `userId` → `String` on `Connection`,
-`Account`, `Balance`, `Transaction`, `Holding`. App-owned models keep
-`Int @default(autoincrement())` — Better Auth never touches them.
+Components name the **role** a colour plays — `text-foreground-muted`, never
+`text-stone-500 dark:text-stone-400`. The light/dark pairing lives in `:root` and
+`.dark` and nowhere else, so **no component carries a `dark:` variant for colour
+at all**. Swapping the accent is one line.
 
-**Added:** `User.isAnonymous Boolean` (declared by the anonymous plugin) and
-`@@index([updatedAt])` on `Session`. A `User.lastActiveAt` column was tried and
-removed: it needs a write on every request, and the only code that runs on every
-request is the proxy, which runs on the Edge runtime where Prisma is
-unavailable. Better Auth already maintains `Session.updatedAt` on its `updateAge`
-schedule, so the purge anchors on that instead and no app code maintains it.
+Four things there are load-bearing and easy to break:
 
-**Kept:** `Transaction` + `Category`, `Holding` + `Security`, `Connection`,
-`Account`, `Balance`, `Institution`, and the three enums.
+- `@custom-variant dark (&:where(.dark, .dark *))` — Tailwind v4's built-in
+  `dark:` keys on `prefers-color-scheme`, which cannot see an explicit choice.
+- `@theme inline` — without `inline`, a utility compiles to a _copy_ of the
+  token's value and freezes at its light value.
+- The preflight `border-color` override — lets `border` be written with no colour
+  at all, which is the common case.
+- `color-scheme` on both — without it a dark page keeps white scrollbars and
+  flashes white on load.
 
-Migrations squash to a single `init`. The private app's 13 migrations document a
-history this repo does not have.
+Dark mode is `next-themes`: `attribute="class"`, `defaultTheme="system"`,
+`enableSystem`, `disableTransitionOnChange`, and `suppressHydrationWarning` on
+`<html>` (required — the inline script writes `class` before React hydrates).
+`ThemeToggle` renders **both** buttons and lets CSS pick which shows; branching
+on the resolved theme would mean a mount wait and a swap, because that value is
+unknowable on the server and on the first client render.
+
+Design reference:
+an internal design canvas — light,
+dark, empty state, tokens. Its working files were session scratch and are gone;
+the canvas can be read back with the `design` skill's `--extract` if it ever
+needs editing.
 
 ## Net worth history
 
-The one requirement with no implementation to port. `saveInitialBalances` writes
-**one** `Balance` row per account at connect time, and the private app's chart is
-only meaningful because a nightly cron accumulated a year of snapshots. Dropping
-cron makes a fresh demo user's chart a single point.
+The one piece with nothing to port. The private app's chart is meaningful only
+because a nightly cron accumulated a real `Balance` snapshot per account per day.
+This demo has no cron, so a visitor who connected a bank thirty seconds ago has
+one snapshot per account and a chart with a single point.
 
-Solution: reconstruct it. Walk the current balance backward day by day,
-reversing each transaction, to produce a daily series. Plaid gives us the ledger
-— `link-token.ts` already requests 730 days.
+`src/lib/utils/net-worth-history.ts` walks today's balances **backward** through
+the transaction ledger. Plaid supplies 730 days of it (`link-token.ts` asks).
 
-- Pure function in `lib/utils/`, unit-tested before any UI exists.
-- Covers accounts with a ledger: cash and credit.
-- Accounts **without** one (investment, manual real-asset) are held flat at
-  their current balance across the window. The chart says so rather than
-  implying the line is measured.
+Two things about it that are easy to get wrong:
 
-## Environment
+- **The direction of the walk depends on account type.** For an asset a positive
+  Plaid amount left the account, so the balance before it was higher. For a
+  liability the stored balance is what is _owed_ and a positive amount is a
+  purchase that increased the debt, so before it less was owed. Same ledger,
+  opposite arithmetic. A sign error does not throw — it draws a smooth curve
+  pointing the wrong way, which is why all 15 tests pin arithmetic and inject
+  `today`.
+- **`getTransactionsForHistory` returns raw Plaid-convention amounts**, unlike
+  every other read in that module, which flips the sign for display. An
+  integration test asserts the two functions _disagree_, so the inconsistency
+  cannot be tidied away by accident.
 
-| Variable                                                                                          | Notes                                                      |
-| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `DATABASE_URL`, `DIRECT_URL`                                                                      | New Neon project                                           |
-| `ENCRYPTION_KEY_0`, `ENCRYPTION_KEY_CURRENT_ID`                                                   | Plaid access tokens stay encrypted at rest even in sandbox |
-| `PLAID_CLIENT_ID`, `PLAID_SANDBOX_SECRET`, `PLAID_ENV`, `PLAID_REDIRECT_URI`, `PLAID_WEBHOOK_URI` | Sandbox credentials only                                   |
-| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`                                                           |                                                            |
-| `PURGE_SECRET`                                                                                    | Authenticates the GitHub Actions purge                     |
-| `ENABLE_EXPERIMENTAL_COREPACK`                                                                    | Vercel project settings only; see `.env.example`           |
+Accounts with no ledger (investment, manual) hold flat across the window. That
+falls out of the algorithm rather than being special-cased, and the chart says so
+in a footnote — the difference between a limitation and a lie.
 
-Dropped: `DEV_AUTH_PASSWORD`, `DISABLE_SIGNUP`, `GITHUB_*`, `GOOGLE_*`,
-`CRON_SECRET`, `SENTRY_*`. Deferred: `NEXT_PUBLIC_POSTHOG_*`.
+## Schema notes
 
-## What ports, what's rebuilt, what's dropped
+`prisma/schema.prisma`, one squashed `init` migration.
 
-**Ports nearly untouched** — `lib/utils/*` (notably `account-types.ts`, the
-5-type × ~90-subtype hierarchy with `category` and `sortOrder` that the rollups
-need), `lib/plaid/*`, `lib/db/*` minus household, `cipher` + `cipher-core`,
-`server-result.ts`, `handle-server-result.ts`, `select-schemas.ts`,
-`eslint.config.mjs`, `.github/`, `.vscode/{launch,settings}.json`, most of
-`test/`.
+Two id conventions, deliberately: Better Auth owns `User`, `Session`,
+`UserAccount`, `Verification` and generates **string** ids for them; everything
+app-owned keeps `Int @default(autoincrement())`. The private app forced serial
+integers via `advanced.database.generateId`, which meant `Number(user.id)` at
+every session read; delegating is the simpler contract.
 
-**Rebuilt from scratch** — every component. `ui/` re-derived against the
-primitive bar above, on Base UI. Page sections bespoke per resource.
-`shared/typography.tsx` does not come across; pages write their own headings.
+Dropped from the private app: `Household`, `HouseholdMember`, `AccountShare`.
+Added: `User.isAnonymous` (the plugin declares it) and `@@index([updatedAt])` on
+`Session`, which is the purge's TTL anchor — Better Auth maintains it on its own
+`updateAge` schedule, so no app code has to.
 
-**Dropped** — Sentry (10 source files, not 2 configs), the `/debug` zone (25
-files), the `(auth)` route group and all dev-auth, sidebar + breadcrumb +
-`@breadcrumb` parallel route, cron, 7 of 8 `scripts/`, `LICENSE.md`,
-`certificates/`, `backups/`, `next-env.d.ts`, `tsconfig.tsbuildinfo`, the
-`@/contexts/*` tsconfig alias (points at a directory that does not exist).
+A `User.lastActiveAt` column was tried and removed: it needs a write on every
+request, and the only thing running on every request is the proxy, which is Edge
+and has no Prisma.
 
-## Sequence
+## Gotchas worth knowing before touching things
 
-1. ~~**Spike Better Auth anonymous + string ids**~~ — done. Session is created
-   in `src/proxy.ts` on the first request and is readable in that same render
-   (the new cookie is replayed onto the request, not just the response). String
-   ids throughout, no `Number(user.id)` anywhere. Repeat requests reuse the
-   session. IP tracking is off.
+- **The proxy validates the session, it does not check the cookie exists.** The
+  purge deletes idle users while their cookies remain valid, so a returning
+  visitor arrives with a well-formed cookie for a deleted user. A presence check
+  passes it, sign-in is skipped, and with no sign-in UI the page is permanently
+  dead for that browser. This was a real bug, found live.
+- **The replayed cookie replaces a same-named stale one rather than being
+  appended.** Better Auth reads the first occurrence; appending leaves the dead
+  cookie in front and the render is still signed out.
+- **`plaid/client.ts` throws at import if `PLAID_ENV !== 'sandbox'`.** That is
+  the guarantee no configuration reaches production, and it is why the
+  per-endpoint sandbox checks were removed.
+- **Never log a raw `AxiosError` from Plaid.** `.config.data` carries the access
+  token and `.config.headers` carries `PLAID-SECRET`. `callPlaid` logs a named
+  projection; two test files assert this, each with a control case proving the
+  same serializer _does_ find the credentials on the raw error.
+- **The integration suite TRUNCATEs.** Three independent guards keep it on the
+  local container; the database name `personal_finance_demo_test` is load-bearing
+  in four places (`compose.yaml`, `support/guard.ts`,
+  `vitest.integration.config.mts`, `ci.yml`).
+- **`react-hooks/purity` lint rejects `Date.now()` in a Server Component.** Push
+  the clock read down into the lib or db function.
+- **`handle-server-result.ts` was never ported.** It depended on `sonner`;
+  `src/hooks/use-server-action.ts` replaces it against Base UI's toast.
 
-   Two things the spike caught that the plan had not: the proxy must **validate**
-   the session rather than check the cookie is present, or a visitor whose row
-   the purge job deleted is permanently stuck on a dead page; and the replayed
-   cookie must **replace** a same-named stale cookie rather than being appended
-   after it, since Better Auth reads the first occurrence.
+## Two security fixes made during the port
 
-2. ~~Scaffold~~ — done.
-3. ~~Data layer~~ — done. `lib/db`, `lib/plaid`, `lib/actions`, `session.ts`,
-   `errors.ts`, plus the webhook handler and the purge endpoint. 260 unit and 81
-   integration tests pass; the integration suite runs against real Postgres and
-   the real Plaid sandbox.
-4. ~~`net-worth-history.ts`~~ — done, tests first, 15 of them.
-5. ~~UI, per the component rules~~ — done. Tokens follow another private project
-   (`--foreground-strong` … `--border-strong`, `@theme inline`, the preflight
-   border-color override, `color-scheme`), on Tailwind `stone` rather than
-   `zinc`, plus `--positive`/`--negative` and a `--border-soft` for the row
-   separators dense tables need. Dark mode is `next-themes`, `attribute="class"`,
-   `defaultTheme="system"`; the toggle renders both buttons and lets CSS pick,
-   so nothing waits for mount and nothing flashes.
+Both because the audience changed from a handful of trusted household users to
+anonymous strangers on the public internet:
 
-   Still outstanding on the page: manual account CRUD, the reset-my-data
-   control, and a per-account view (deliberately absent — single page).
+- `resetItemErrorCode` matched on `plaidItemId` alone. A Server Action id is
+  reachable by direct POST, so an unscoped `updateMany` let anyone clear anyone
+  else's error state by guessing an item id. Now scoped by `userId`.
+- `updateTransaction` forwarded its payload to Prisma unvalidated, which the
+  private app documented as a known hole. Now parsed with a **strict** Zod
+  schema, where `.strict()` is the load-bearing part.
 
-6. ~~Purge workflow~~ — done, shipped with step 3. A reset-my-data control is
-   still outstanding.
-7. `AGENTS.md` / `README.md`; delete this file.
-8. PostHog — page views, basic logs/metrics. Anonymous. **No session replay.**
-
-## Carried forward
-
-Things deferred with a reason, so they are not quietly lost:
-
-- **`handle-server-result.ts`** is not ported. It depends on `sonner`, which was
-  dropped in favour of Base UI's Toast, so it lands with the toast primitive.
-- **A "reset my demo data" control.** The purge covers abandonment; this covers
-  a visitor who wants a clean slate now. `db.deleteUsers` already does the work.
-- **The chart's flat-line caveat.** Accounts with no ledger hold flat across the
-  window. The UI has to say so rather than implying the whole line is measured.
-- **Two security fixes** made during the port, both because the audience changed
-  from trusted household users to anonymous strangers: `resetItemErrorCode` is
-  now scoped by `userId`, and `updateTransaction` parses its payload with a
-  strict Zod schema.
-
-## Deferred
-
-- **Webhook demo trigger.** The handler is worth keeping, but sandbox items only
-  fire webhooks when poked via `/sandbox/item/fire_webhook`. A "simulate a bank
-  update" control would make the webhook path visible to a portfolio viewer
-  instead of invisible infrastructure. Build it after live testing.
-- Seeded demo data, pending live testing of the empty state.
+`create-connection` also drops the private app's Sentry failsafe that logged the
+encrypted access token when every persist retry failed. That was a deliberate
+trade in production — an orphaned item is billable and unrevocable without a
+Plaid support request. Sandbox items are free and disposable, so there is nothing
+to buy and no reason to put a token in a log.
