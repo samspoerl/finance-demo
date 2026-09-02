@@ -1,17 +1,155 @@
 @import 'tailwindcss';
 
-/* Placeholder tokens for the spike. The real design system lands with the UI. */
+/* Tailwind v4's built-in `dark:` variant keys on `prefers-color-scheme`, which
+   can't see an explicit choice. next-themes writes a `.dark` class on <html>,
+   so the variant has to be redefined to read that instead. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Semantic tokens.
+
+   Components name the *role* a color plays — `text-foreground-muted`, not
+   `text-stone-500 dark:text-stone-400`. The light/dark pairing lives here and
+   nowhere else, so no component carries a `dark:` variant for color at all.
+
+   Values are Tailwind's own palette vars rather than literal hex, so a token
+   still reads as the palette step it is and stays in step with the palette.
+   The palette is `stone`: warm enough that a page of dense figures doesn't read
+   as clinical, neutral enough that the one accent stays the only color.
+   --------------------------------------------------------------------------- */
+
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  /* Surfaces, back to front. Cards are white on a tinted canvas; that contrast
+     is what lets them read as objects without a shadow. */
+  --background: var(--color-stone-50);
+  --surface: var(--color-white);
+  --surface-strong: var(--color-stone-50);
+
+  /* Text, strongest to faintest. `foreground` is body copy; figures and
+     headings step up to `foreground-strong`. */
+  --foreground-strong: var(--color-stone-900);
+  --foreground: var(--color-stone-600);
+  --foreground-muted: var(--color-stone-500);
+  --foreground-subtle: var(--color-stone-400);
+
+  /* Hairlines. `border` is the default every element inherits (see the base
+     layer); `border-soft` separates rows *inside* a card, so a table reads as
+     one object rather than a stack of boxes; `border-strong` marks controls
+     that need to read as edges. */
+  --border: var(--color-stone-200);
+  --border-soft: var(--color-stone-100);
+  --border-strong: var(--color-stone-300);
+
+  /* Solid actions, and the focus ring. */
+  --primary: var(--color-stone-900);
+  --primary-hover: var(--color-stone-700);
+  --primary-foreground: var(--color-white);
+  --ring: var(--color-stone-400);
+
+  /* The only two hues in the app, and they carry meaning rather than
+     decoration: money in, money out. */
+  --positive: var(--color-emerald-700);
+  --positive-surface: var(--color-emerald-50);
+  --negative: var(--color-red-800);
 }
 
+.dark {
+  --background: var(--color-stone-950);
+  --surface: var(--color-stone-900);
+  --surface-strong: var(--color-stone-800);
+
+  --foreground-strong: var(--color-stone-100);
+  --foreground: var(--color-stone-300);
+  --foreground-muted: var(--color-stone-400);
+  --foreground-subtle: var(--color-stone-500);
+
+  --border: var(--color-stone-800);
+  --border-soft: var(--color-stone-800);
+  --border-strong: var(--color-stone-700);
+
+  --primary: var(--color-stone-100);
+  --primary-hover: var(--color-stone-300);
+  --primary-foreground: var(--color-stone-900);
+  --ring: var(--color-stone-600);
+
+  /* A step lighter than in light mode, so they stay legible on stone-950
+     without glowing. */
+  --positive: var(--color-emerald-400);
+  --positive-surface: var(--color-emerald-950);
+  --negative: var(--color-red-400);
+}
+
+/* `inline` so a utility compiles to `var(--foreground)` rather than to a copy of
+   its value — which is what lets the same class resolve differently under
+   `.dark`. Without it the tokens would be frozen at their light values. */
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+
+  --color-foreground-strong: var(--foreground-strong);
   --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+
+  --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+
+  --color-positive: var(--positive);
+  --color-positive-surface: var(--positive-surface);
+  --color-negative: var(--negative);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-montserrat);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+@layer base {
+  /* Tailwind's preflight defaults every border to `currentColor`, which would
+     make a bare `border-b` inherit the text color. Pointing it at the token
+     instead is what lets `border`, `border-y`, and `divide-y` be written with no
+     color at all — the common case — leaving `border-border-strong` to mark the
+     deliberate exceptions. */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  /* One focus ring for the whole app. `:focus-visible` rather than `:focus` so
+     it answers keyboard navigation without drawing a ring on every mouse click. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  body {
+    @apply bg-background text-foreground min-h-screen;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-montserrat);
+  }
+
+  /* Every figure in this app is a column of digits that must line up and must
+     not change width as it updates. Applied here rather than per-call-site
+     because there is no number in this app that wants proportional figures. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
 }

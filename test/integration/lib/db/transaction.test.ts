@@ -178,10 +178,7 @@ describe('getTransactionsForHistory', () => {
       date: '2026-03-10',
     })
 
-    const [raw] = await db.getTransactionsForHistory(
-      owner.id,
-      new Date('2026-01-01')
-    )
+    const [raw] = await db.getTransactionsForHistory(owner.id, 36500)
     const [displayed] = await db.getRecentTransactions(owner.id)
 
     // The whole point of this function: the two disagree, deliberately.
@@ -189,16 +186,18 @@ describe('getTransactionsForHistory', () => {
     expect(displayed.amount).toBe(-40)
   })
 
-  it('excludes transactions before the cutoff', async () => {
-    await createTransaction(owner.id, ownerAccount.id, { date: '2025-12-31' })
-    await createTransaction(owner.id, ownerAccount.id, { date: '2026-01-02' })
+  it('excludes transactions older than the window', async () => {
+    const today = new Date()
+    const iso = (d: Date) => d.toISOString().slice(0, 10)
+    const daysAgo = (n: number) =>
+      iso(new Date(today.getTime() - n * 24 * 60 * 60 * 1000))
 
-    const rows = await db.getTransactionsForHistory(
-      owner.id,
-      new Date('2026-01-01')
-    )
+    await createTransaction(owner.id, ownerAccount.id, { date: daysAgo(400) })
+    await createTransaction(owner.id, ownerAccount.id, { date: daysAgo(10) })
 
-    expect(rows.map((r) => r.date)).toEqual(['2026-01-02'])
+    const rows = await db.getTransactionsForHistory(owner.id, 365)
+
+    expect(rows.map((r) => r.date)).toEqual([daysAgo(10)])
   })
 
   it("never returns another user's transactions", async () => {
@@ -207,10 +206,7 @@ describe('getTransactionsForHistory', () => {
       date: '2026-02-01',
     })
 
-    const rows = await db.getTransactionsForHistory(
-      owner.id,
-      new Date('2026-01-01')
-    )
+    const rows = await db.getTransactionsForHistory(owner.id, 36500)
 
     expect(rows).toHaveLength(1)
     expect(rows[0].accountId).toBe(ownerAccount.id)

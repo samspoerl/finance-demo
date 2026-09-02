@@ -200,7 +200,17 @@ files), the `(auth)` route group and all dev-auth, sidebar + breadcrumb +
    integration tests pass; the integration suite runs against real Postgres and
    the real Plaid sandbox.
 4. ~~`net-worth-history.ts`~~ — done, tests first, 15 of them.
-5. **UI, per the component rules. ← next**
+5. ~~UI, per the component rules~~ — done. Tokens follow another private project
+   (`--foreground-strong` … `--border-strong`, `@theme inline`, the preflight
+   border-color override, `color-scheme`), on Tailwind `stone` rather than
+   `zinc`, plus `--positive`/`--negative` and a `--border-soft` for the row
+   separators dense tables need. Dark mode is `next-themes`, `attribute="class"`,
+   `defaultTheme="system"`; the toggle renders both buttons and lets CSS pick,
+   so nothing waits for mount and nothing flashes.
+
+   Still outstanding on the page: manual account CRUD, the reset-my-data
+   control, and a per-account view (deliberately absent — single page).
+
 6. ~~Purge workflow~~ — done, shipped with step 3. A reset-my-data control is
    still outstanding.
 7. `AGENTS.md` / `README.md`; delete this file.

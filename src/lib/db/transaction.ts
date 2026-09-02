@@ -93,7 +93,7 @@ export async function getAllTransactions(userId: string, page: number) {
 }
 
 /**
- * The ledger behind the reconstructed net worth chart, from `since` onward.
+ * The ledger behind the reconstructed net worth chart: the last `days` of it.
  *
  * **Returns raw Plaid-convention amounts — positive is money leaving the
  * account — unlike every other read in this file, which flips the sign for
@@ -101,8 +101,13 @@ export async function getAllTransactions(userId: string, page: number) {
  * reverse and expects the convention the balances were produced under. Flipping
  * here to match its neighbours would invert the whole chart, silently and
  * smoothly.
+ *
+ * Takes a window rather than a cutoff date so the caller — a Server Component —
+ * does not have to read the clock during render.
  */
-export async function getTransactionsForHistory(userId: string, since: Date) {
+export async function getTransactionsForHistory(userId: string, days: number) {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+
   return prisma.transaction.findMany({
     select: { accountId: true, date: true, amount: true },
     where: {
