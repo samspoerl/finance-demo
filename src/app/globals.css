@@ -7,33 +7,36 @@
 
 /* ---------------------------------------------------------------------------
    The base scale — the app's one neutral, and the only knob for changing it.
-   Currently `stone`: warm enough that a page of dense figures doesn't read as
-   clinical, neutral enough that the one accent stays the only color. Another
-   neutral is a find-replace of the palette name across these eleven lines.
+   Currently `neutral`, which is achromatic at every step. `stone` came first,
+   picked for warmth against a page of dense figures, and read as brown in dark
+   mode: the dark theme floods the viewport with the tinted steps — `--background`
+   is base-950 and `--surface` is base-900 — where light mode's large areas are
+   white and base-50, achromatic either way. Any warm palette does the same.
+   Swapping is a find-replace of the name across these eleven lines.
 
    A plain `@theme`, deliberately not the `@theme inline` below: `inline`
    compiles a utility to the token's *value*, which would resolve `bg-base-800`
-   straight to `--color-stone-800` and skip this layer entirely, leaving a
+   straight to `--color-neutral-800` and skip this layer entirely, leaving a
    `--color-base-*` override moving the semantic tokens but not the utilities.
 
    Aliasing Tailwind's vars rather than copying their values keeps the steps
    tracking the palette, and reads as the palette step it is. Safe under plain
-   `@theme` only because `--color-stone-*` is static: a theme var pointing at
+   `@theme` only because `--color-neutral-*` is static: a theme var pointing at
    something that itself flips per-theme freezes at its `:root` value, which is
    the whole reason the block below is `inline`.
    --------------------------------------------------------------------------- */
 @theme {
-  --color-base-50: var(--color-stone-50);
-  --color-base-100: var(--color-stone-100);
-  --color-base-200: var(--color-stone-200);
-  --color-base-300: var(--color-stone-300);
-  --color-base-400: var(--color-stone-400);
-  --color-base-500: var(--color-stone-500);
-  --color-base-600: var(--color-stone-600);
-  --color-base-700: var(--color-stone-700);
-  --color-base-800: var(--color-stone-800);
-  --color-base-900: var(--color-stone-900);
-  --color-base-950: var(--color-stone-950);
+  --color-base-50: var(--color-neutral-50);
+  --color-base-100: var(--color-neutral-100);
+  --color-base-200: var(--color-neutral-200);
+  --color-base-300: var(--color-neutral-300);
+  --color-base-400: var(--color-neutral-400);
+  --color-base-500: var(--color-neutral-500);
+  --color-base-600: var(--color-neutral-600);
+  --color-base-700: var(--color-neutral-700);
+  --color-base-800: var(--color-neutral-800);
+  --color-base-900: var(--color-neutral-900);
+  --color-base-950: var(--color-neutral-950);
 }
 
 /* ---------------------------------------------------------------------------

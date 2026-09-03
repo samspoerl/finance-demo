@@ -76,7 +76,7 @@ Five lines there are load-bearing and easy to break:
 
 - `@custom-variant dark (&:where(.dark, .dark *))` — Tailwind v4's built-in `dark:` keys on `prefers-color-scheme`, which cannot see an explicit choice.
 - `@theme inline` — without `inline`, a utility compiles to a _copy_ of the token's value and freezes at its light value.
-- A plain `@theme` for `--color-base-*` — the mirror of the line above, and the reason the scale is a separate block. `inline` there would resolve `bg-base-800` straight to `--color-stone-800`, skipping the base layer, so a `--color-base-*` override would move the semantic tokens but not the utilities. It is safe as a plain `@theme` only because the palette vars it aliases are static.
+- A plain `@theme` for `--color-base-*` — the mirror of the line above, and the reason the scale is a separate block. `inline` there would resolve `bg-base-800` straight to `--color-neutral-800`, skipping the base layer, so a `--color-base-*` override would move the semantic tokens but not the utilities. It is safe as a plain `@theme` only because the palette vars it aliases are static.
 - The preflight `border-color` override — lets `border` be written with no color, the common case.
 - `color-scheme` on both — without it a dark page keeps white scrollbars and flashes white on load.
 

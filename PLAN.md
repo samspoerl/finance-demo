@@ -105,7 +105,7 @@ In rough order:
 | Lifecycle     | Nightly GitHub Actions purge, 7-day idle TTL                        |
 | Observability | `console` behind one seam. No Sentry. PostHog deferred              |
 | License       | MIT                                                                 |
-| UI            | Bespoke, Base UI primitives, Tailwind `stone`, `next-themes`        |
+| UI            | Bespoke, Base UI primitives, Tailwind `neutral`, `next-themes`      |
 
 ## Architecture
 
@@ -187,10 +187,11 @@ essays. The private app's comments are much heavier; trim when porting.
 ## The token system
 
 `src/app/globals.css`. Structure and naming follow
-another private project of mine; the palette is Tailwind `stone` rather
-than `zinc`, which is warmer and where this design already sat. It is aliased
+another private project of mine. The palette is Tailwind `neutral`, aliased
 behind a `--color-base-*` scale at the top of the file, so changing the app's
 neutral is a find-replace of the palette name across one eleven-line block.
+`stone` came first, for warmth against a page of dense figures, and read as
+brown across dark mode's large tinted surfaces.
 
 Components name the **role** a colour plays — `text-foreground-muted`, never
 `text-<palette>-500 dark:text-<palette>-400` (a placeholder because Tailwind
@@ -206,7 +207,7 @@ Five things there are load-bearing and easy to break:
 - `@theme inline` — without `inline`, a utility compiles to a _copy_ of the
   token's value and freezes at its light value.
 - A plain `@theme` for `--color-base-*` — the mirror of the line above. `inline`
-  there would resolve `bg-base-800` straight to `--color-stone-800` and skip the
+  there would resolve `bg-base-800` straight to `--color-neutral-800` and skip the
   base layer, so a `--color-base-*` override would move the semantic tokens but
   not the utilities. Safe as a plain `@theme` only because the palette vars it
   aliases are static.
