@@ -13,6 +13,7 @@ import {
   getTransactionsForHistory,
 } from '@/lib/db/transaction'
 import { getSession } from '@/lib/session'
+import { cn } from '@/lib/utils'
 import { buildAccountRollups } from '@/lib/utils/account-rollups'
 import { reconstructNetWorthHistory } from '@/lib/utils/net-worth-history'
 
@@ -99,7 +100,15 @@ export default async function Page() {
 
         <AccountsSection rollups={rollups} />
 
-        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-5">
+        {/* `HoldingsSection` renders nothing without holdings, so the second
+            column would otherwise sit empty and strand the transactions card
+            two thirds of the way across. */}
+        <div
+          className={cn(
+            'grid gap-5',
+            holdings.length > 0 && 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
+          )}
+        >
           <TransactionsSection transactions={recent} categories={categories} />
           <HoldingsSection holdings={holdings} />
         </div>

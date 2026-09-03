@@ -9,7 +9,7 @@ import { TrendingUpIcon } from 'lucide-react'
  */
 export function AppHeader({ showActions = true }: { showActions?: boolean }) {
   return (
-    <header className="bg-surface flex h-16 items-center justify-between border-b px-8">
+    <header className="bg-surface sticky top-0 z-40 flex h-16 items-center justify-between border-b px-8">
       <div className="flex items-center gap-3">
         <TrendingUpIcon className="text-positive size-5" />
         <h1 className="text-foreground-strong text-[15px] font-bold tracking-tight">
