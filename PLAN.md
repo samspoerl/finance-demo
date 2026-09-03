@@ -188,19 +188,28 @@ essays. The private app's comments are much heavier; trim when porting.
 
 `src/app/globals.css`. Structure and naming follow
 another private project of mine; the palette is Tailwind `stone` rather
-than `zinc`, which is warmer and where this design already sat.
+than `zinc`, which is warmer and where this design already sat. It is aliased
+behind a `--color-base-*` scale at the top of the file, so changing the app's
+neutral is a find-replace of the palette name across one eleven-line block.
 
 Components name the **role** a colour plays — `text-foreground-muted`, never
-`text-stone-500 dark:text-stone-400`. The light/dark pairing lives in `:root` and
-`.dark` and nowhere else, so **no component carries a `dark:` variant for colour
-at all**. Swapping the accent is one line.
+`text-<palette>-500 dark:text-<palette>-400` (a placeholder because Tailwind
+scans prose, and a real class name here compiles into the bundle). The
+light/dark pairing lives in `:root` and `.dark` and nowhere else, so **no
+component carries a `dark:` variant for colour at all**. Swapping the accent
+is one line.
 
-Four things there are load-bearing and easy to break:
+Five things there are load-bearing and easy to break:
 
 - `@custom-variant dark (&:where(.dark, .dark *))` — Tailwind v4's built-in
   `dark:` keys on `prefers-color-scheme`, which cannot see an explicit choice.
 - `@theme inline` — without `inline`, a utility compiles to a _copy_ of the
   token's value and freezes at its light value.
+- A plain `@theme` for `--color-base-*` — the mirror of the line above. `inline`
+  there would resolve `bg-base-800` straight to `--color-stone-800` and skip the
+  base layer, so a `--color-base-*` override would move the semantic tokens but
+  not the utilities. Safe as a plain `@theme` only because the palette vars it
+  aliases are static.
 - The preflight `border-color` override — lets `border` be written with no colour
   at all, which is the common case.
 - `color-scheme` on both — without it a dark page keeps white scrollbars and

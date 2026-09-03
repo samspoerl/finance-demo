@@ -1,6 +1,6 @@
 # AGENTS.md
 
-A public, Plaid-**sandbox-only** personal finance demo: net worth, accounts, transactions and holdings on one page. 
+A public, Plaid-**sandbox-only** personal finance demo: net worth, accounts, transactions and holdings on one page.
 
 ## Commands
 
@@ -58,7 +58,7 @@ New components default to the last bucket and earn their way out.
 
 - **`ui/`** — primitives. The bar: _would this exist, unchanged, in a completely different app?_ A primitive absorbs variation as props, not sibling files.
 - **`icons/`** — SVG marks lucide doesn't ship. A kind, not a usage tier.
-- **`shared/`** — the _exact same_ UI in two or more resources. Strict; this is the only thing between `shared/` and a junk drawer. Currently empty, correctly.
+- **`shared/`** — the _exact same_ UI in two or more resources. Strict; this is the only thing between `shared/` and a junk drawer. Holds one file: `AppIcon`, rendered by both `app/icon.tsx` and `app/apple-icon.tsx`.
 - **Concern directories** — only when the concern already exists in `lib/`.
 - **Everything else** — bespoke, grouped by resource.
 
@@ -70,12 +70,13 @@ Prefer plain markup to a wrapper. Extract on the second or third real use, not i
 
 ## Color
 
-Components name the **role** a color plays — `text-foreground-muted`, never `text-stone-500 dark:text-stone-400`. The light/dark pairing lives in `:root` and `.dark` in `globals.css` and nowhere else, so no component carries a `dark:` variant for color at all.
+Components name the **role** a color plays — `text-foreground-muted`, never `text-<palette>-500 dark:text-<palette>-400` (spelled with a placeholder because Tailwind scans comments and prose, and a real class name here compiles into the bundle). The light/dark pairing lives in `:root` and `.dark` in `globals.css` and nowhere else, so no component carries a `dark:` variant for color at all. Every neutral resolves through the `--color-base-*` scale at the top of the file — the one block to edit to change the app's neutral.
 
-Four lines there are load-bearing and easy to break:
+Five lines there are load-bearing and easy to break:
 
 - `@custom-variant dark (&:where(.dark, .dark *))` — Tailwind v4's built-in `dark:` keys on `prefers-color-scheme`, which cannot see an explicit choice.
 - `@theme inline` — without `inline`, a utility compiles to a _copy_ of the token's value and freezes at its light value.
+- A plain `@theme` for `--color-base-*` — the mirror of the line above, and the reason the scale is a separate block. `inline` there would resolve `bg-base-800` straight to `--color-stone-800`, skipping the base layer, so a `--color-base-*` override would move the semantic tokens but not the utilities. It is safe as a plain `@theme` only because the palette vars it aliases are static.
 - The preflight `border-color` override — lets `border` be written with no color, the common case.
 - `color-scheme` on both — without it a dark page keeps white scrollbars and flashes white on load.
 
