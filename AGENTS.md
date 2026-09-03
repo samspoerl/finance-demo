@@ -66,7 +66,7 @@ Prefer plain markup to a wrapper. Extract on the second or third real use, not i
 
 `'use client'` goes at the lowest component owning mutable state or touching a browser API, never at the level that fetches, because nothing fetches on the client. There are exactly three client boundaries: `ThemeToggle`, `NetWorthChart`, `TransactionCategoryMenu`.
 
-**Base UI** is for widgets with correctness you can't see — dismissal, focus return, viewport-edge positioning, ARIA. A `<button onClick>` has no invisible half; hand-roll it. Import from the subpath (`@base-ui/react/menu`), put Tailwind classes on the parts, and remember popups portal to `<body>`.
+**Base UI** is for widgets with correctness you can't see — dismissal, focus return, viewport-edge positioning, ARIA. A `<button onClick>` has no invisible half; hand-roll it. Import from the subpath (`@base-ui/react/menu`), put Tailwind classes on the parts, and remember popups portal to `<body>`. Parts that look decorative are often context consumers — `Menu.GroupLabel` belongs inside its `Menu.RadioGroup`, and misplacing it throws when the popup opens rather than at build time.
 
 ## Color
 

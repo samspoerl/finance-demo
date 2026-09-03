@@ -177,7 +177,10 @@ client. There are exactly three client boundaries: `ThemeToggle`,
 **Base UI** is for widgets with correctness you can't see — dismissal, focus
 return, viewport-edge positioning, ARIA. A `<button onClick>` has no invisible
 half; hand-roll it. Import from the subpath (`@base-ui/react/menu`), put Tailwind
-classes on the parts, and remember popups portal to `<body>`.
+classes on the parts, and remember popups portal to `<body>`. Parts that look
+decorative are often context consumers — `Menu.GroupLabel` belongs inside its
+`Menu.RadioGroup`, and misplacing it throws when the popup opens rather than at
+build time.
 
 **Comment verbosity is medium.** Comment where something is non-obvious or where
 an explicit decision was made — a constraint that looks removable but isn't, an

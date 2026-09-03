@@ -36,6 +36,11 @@ const TYPES: { value: TransactionType; label: string }[] = [
  * No optimistic update. `revalidateApp()` in the action re-renders the page from
  * the server, which is what the KPI row and the chart above need — a
  * recategorize moves the income and expense figures, not just this chip.
+ *
+ * Each `Menu.GroupLabel` must sit *inside* its `Menu.RadioGroup`, not above it.
+ * The label reads a context the group provides and registers its id there for
+ * `aria-labelledby`; as a sibling it throws on open, not at build time, so the
+ * table renders fine and the menu dies on the first click.
  */
 export function TransactionCategoryMenu({
   transactionId,
@@ -72,9 +77,6 @@ export function TransactionCategoryMenu({
       <Menu.Portal>
         <Menu.Positioner sideOffset={6} align="start" className="z-50">
           <Menu.Popup className="bg-surface flex max-h-[320px] w-64 flex-col overflow-y-auto rounded-lg border p-1 shadow-lg">
-            <Menu.GroupLabel className="text-foreground-subtle px-2 py-1.5 text-[11px] font-medium tracking-wider uppercase">
-              Treat as
-            </Menu.GroupLabel>
             <Menu.RadioGroup
               value={type}
               onValueChange={(next) =>
@@ -86,6 +88,9 @@ export function TransactionCategoryMenu({
                 })
               }
             >
+              <Menu.GroupLabel className="text-foreground-subtle px-2 py-1.5 text-[11px] font-medium tracking-wider uppercase">
+                Treat as
+              </Menu.GroupLabel>
               {TYPES.map((option) => (
                 <Menu.RadioItem
                   key={option.value}
@@ -102,9 +107,6 @@ export function TransactionCategoryMenu({
 
             <Menu.Separator className="my-1 h-px bg-[var(--color-border)]" />
 
-            <Menu.GroupLabel className="text-foreground-subtle px-2 py-1.5 text-[11px] font-medium tracking-wider uppercase">
-              Category
-            </Menu.GroupLabel>
             <Menu.RadioGroup
               value={categoryId ?? -1}
               onValueChange={(next) =>
@@ -116,6 +118,9 @@ export function TransactionCategoryMenu({
                 })
               }
             >
+              <Menu.GroupLabel className="text-foreground-subtle px-2 py-1.5 text-[11px] font-medium tracking-wider uppercase">
+                Category
+              </Menu.GroupLabel>
               <Menu.RadioItem
                 value={-1}
                 className="data-[highlighted]:bg-surface-strong flex cursor-pointer items-center justify-between rounded px-2 py-1.5 text-[13px] outline-none"
