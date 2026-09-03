@@ -20,7 +20,7 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
-  title: 'Personal Finance App Demo',
+  title: 'Personal Finance Demo',
   description:
     'A sandbox demo of a personal finance app: net worth, accounts, transactions and holdings, wired to Plaid.',
 }

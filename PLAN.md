@@ -1,4 +1,4 @@
-# Build plan — Personal Finance App Demo
+# Build plan — Personal Finance Demo
 
 A public, sandbox-only demo of a private predecessor app, built for a
 portfolio: full-stack Next.js with a real third-party API integration (Plaid).
@@ -94,7 +94,7 @@ In rough order:
 
 | Area          | Decision                                                            |
 | ------------- | ------------------------------------------------------------------- |
-| Name          | **Personal Finance App Demo**; package `personal-finance-demo`      |
+| Name          | **Personal Finance Demo**; package `finance-demo`                   |
 | Auth          | Better Auth **anonymous plugin**. String ids, Better Auth–generated |
 | Routing       | One page. No sidebar, no route groups, no other routes              |
 | Manual entry  | Plaid **and** manual accounts (CRUD not yet built)                  |

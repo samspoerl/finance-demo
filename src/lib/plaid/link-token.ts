@@ -29,7 +29,7 @@ export async function createLinkToken({
     user: {
       client_user_id: clientUserId,
     },
-    client_name: 'Personal Finance App Demo',
+    client_name: 'Personal Finance Demo',
     language: 'en',
     // The products array must have at least one entry and Balance is not a
     // valid value. Consenting to Investments and Liabilities without making

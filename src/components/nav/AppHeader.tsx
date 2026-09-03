@@ -13,7 +13,7 @@ export function AppHeader({ showActions = true }: { showActions?: boolean }) {
       <div className="flex items-center gap-3">
         <TrendingUpIcon className="text-positive size-5" />
         <h1 className="text-foreground-strong text-[15px] font-bold tracking-tight">
-          Personal Finance App Demo
+          Personal Finance Demo
         </h1>
         <span className="text-foreground-muted rounded-sm border px-1.5 py-0.5 text-[11px] font-medium tracking-wide">
           PLAID SANDBOX
