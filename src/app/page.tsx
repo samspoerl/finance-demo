@@ -82,7 +82,10 @@ export default async function Page() {
   return (
     <>
       <AppHeader />
-      <main className="flex flex-col gap-5 px-8 pt-7 pb-12">
+      {/* Constrained here rather than on a shared wrapper: the header bar is
+          deliberately full-bleed so its bottom border spans the viewport, and
+          only the dashboard content is centered under it. */}
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-8 pt-7 pb-12">
         <NetWorthSection netWorth={rollups.netWorth} series={series} />
 
         <SummarySection
