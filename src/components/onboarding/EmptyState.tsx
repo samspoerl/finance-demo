@@ -61,7 +61,7 @@ export function EmptyState() {
           between them rather than marking the line it belongs to. */}
       <div className="text-foreground-subtle mt-6 flex max-w-[620px] items-start gap-2 text-xs">
         <LockIcon className="mt-px size-3.5 shrink-0" />
-        <span className="text-pretty">
+        <span className="text-center text-pretty">
           Your demo session is anonymous. Data is deleted after 7 days of
           inactivity.
         </span>
