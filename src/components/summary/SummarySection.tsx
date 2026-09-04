@@ -25,12 +25,12 @@ export function SummarySection({
   periodLabel,
 }: SummarySectionProps) {
   return (
-    <div className="grid grid-cols-2 gap-5">
-      <Card className="px-6 py-5">
+    <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+      <Card className="px-4 py-4 sm:px-6 sm:py-5">
         <span className="text-foreground-muted text-xs font-medium tracking-wider uppercase">
           Balance sheet
         </span>
-        <div className="mt-4 grid grid-cols-2 gap-5">
+        <div className="mt-3 flex flex-col gap-2 sm:mt-4 sm:grid sm:grid-cols-2 sm:gap-5">
           <Stat label="Assets" value={formatBalance(assets)} />
           <Stat
             label="Liabilities"
@@ -40,14 +40,16 @@ export function SummarySection({
         </div>
       </Card>
 
-      <Card className="px-6 py-5">
-        <div className="flex items-baseline justify-between">
+      <Card className="px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-baseline justify-between gap-3">
           <span className="text-foreground-muted text-xs font-medium tracking-wider uppercase">
             Cash flow
           </span>
-          <span className="text-foreground-subtle text-xs">{periodLabel}</span>
+          <span className="text-foreground-subtle shrink-0 text-xs">
+            {periodLabel}
+          </span>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-5">
+        <div className="mt-3 flex flex-col gap-2 sm:mt-4 sm:grid sm:grid-cols-3 sm:gap-5">
           <Stat
             label="Income"
             value={formatBalance(income)}
@@ -82,11 +84,14 @@ function Stat({
         ? 'text-negative'
         : 'text-foreground-strong'
 
+  // A row on a phone — label left, figure right — and a stacked column once
+  // three of them fit side by side. Three columns of a `$`-prefixed figure do
+  // not survive a 390px viewport in any type size worth reading.
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex items-baseline justify-between gap-3 sm:flex-col sm:items-start sm:gap-1.5">
       <span className="text-sm">{label}</span>
       <span
-        className={`tabular font-display text-2xl font-semibold tracking-tight ${toneClass}`}
+        className={`tabular font-display text-xl font-semibold tracking-tight sm:text-2xl ${toneClass}`}
       >
         {value}
       </span>
