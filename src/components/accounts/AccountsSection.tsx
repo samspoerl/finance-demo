@@ -32,7 +32,7 @@ export function AccountsSection({ rollups }: { rollups: AccountRollups }) {
       <div className="flex flex-col">
         {rollups.categories.map((category) => (
           <div key={category.category} className="flex flex-col">
-            <div className="bg-surface-strong border-border-soft flex items-center justify-between border-b px-6 py-3">
+            <div className="bg-surface-strong border-border-soft flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
               <span className="text-foreground-muted font-display text-[11px] font-semibold tracking-widest uppercase">
                 {category.label}
               </span>
@@ -49,7 +49,7 @@ export function AccountsSection({ rollups }: { rollups: AccountRollups }) {
 
             {category.types.map((type) => (
               <div key={type.type} className="flex flex-col">
-                <div className="border-border-soft flex items-center justify-between border-b py-2.5 pr-6 pl-10">
+                <div className="border-border-soft flex items-center justify-between gap-3 border-b py-2.5 pr-4 pl-7 sm:pr-6 sm:pl-10">
                   <span className="text-foreground-strong text-[13px] font-semibold">
                     {type.label}
                   </span>
@@ -61,10 +61,13 @@ export function AccountsSection({ rollups }: { rollups: AccountRollups }) {
                 {type.accounts.map((account) => (
                   <div
                     key={account.id}
-                    className="border-border-soft flex items-center justify-between border-b py-2.5 pr-6 pl-14 last:border-b-0"
+                    className="border-border-soft flex items-center justify-between gap-3 border-b py-2.5 pr-4 pl-10 last:border-b-0 sm:pr-6 sm:pl-14"
                   >
+                    {/* The name truncates rather than wraps: the indentation
+                        is the only thing carrying the hierarchy, and a row
+                        that grows to two lines blurs the level it sits at. */}
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <span className="text-[13px]">
+                      <span className="truncate text-[13px]">
                         {account.institutionName
                           ? `${account.institutionName} · `
                           : ''}
@@ -72,7 +75,7 @@ export function AccountsSection({ rollups }: { rollups: AccountRollups }) {
                           getAccountSubtypeLabel(account.type, account.subtype)}
                       </span>
                       {account.mask && (
-                        <span className="text-foreground-subtle tabular text-xs">
+                        <span className="text-foreground-subtle tabular hidden shrink-0 text-xs sm:inline">
                           ···· {account.mask}
                         </span>
                       )}
@@ -80,8 +83,8 @@ export function AccountsSection({ rollups }: { rollups: AccountRollups }) {
                     <span
                       className={
                         account.amount < 0
-                          ? 'text-negative tabular text-[13px]'
-                          : 'tabular text-[13px]'
+                          ? 'text-negative tabular shrink-0 text-[13px]'
+                          : 'tabular shrink-0 text-[13px]'
                       }
                     >
                       {account.currentBalance === null

@@ -41,7 +41,11 @@ export function NetWorthChart({ series }: { series: NetWorthPoint[] }) {
 
   return (
     <>
-      <div className="bg-surface-strong absolute top-6 right-6 flex gap-0.5 rounded-md p-[3px]">
+      {/* Sits in the card's top-right corner at every width, beside the net
+          worth figure. The tighter buttons on a phone are what buy the gap:
+          `NetWorthSection` reserves a fixed right inset for this pill, so its
+          width is the figure's width budget. */}
+      <div className="bg-surface-strong absolute top-4 right-4 flex gap-0.5 rounded-md p-[3px] sm:top-6 sm:right-6">
         {PERIODS.map(({ key }) => (
           <button
             key={key}
@@ -49,7 +53,7 @@ export function NetWorthChart({ series }: { series: NetWorthPoint[] }) {
             onClick={() => setPeriod(key)}
             aria-pressed={period === key}
             className={cn(
-              'rounded px-2.5 py-1 text-xs transition-colors',
+              'rounded px-2 py-0.5 text-[11px] transition-colors sm:px-2.5 sm:py-1 sm:text-xs',
               period === key
                 ? 'bg-surface text-foreground-strong border font-semibold'
                 : 'text-foreground-muted hover:text-foreground-strong font-medium'

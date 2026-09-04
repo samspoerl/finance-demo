@@ -27,7 +27,7 @@ export function HoldingsSection({ holdings }: { holdings: Holding[] }) {
         {holdings.map((holding) => (
           <div
             key={holding.securityId}
-            className="border-border-soft flex items-center justify-between border-b px-6 py-3"
+            className="border-border-soft flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-6"
           >
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-foreground-strong text-[13px] font-semibold">
@@ -39,13 +39,13 @@ export function HoldingsSection({ holdings }: { holdings: Holding[] }) {
                 </span>
               )}
             </div>
-            <span className="tabular text-[13px]">
+            <span className="tabular shrink-0 text-[13px]">
               {formatBalance(holding.value)}
             </span>
           </div>
         ))}
 
-        <div className="text-foreground-subtle flex items-start gap-2 px-6 py-3.5 text-xs leading-relaxed">
+        <div className="text-foreground-subtle flex items-start gap-2 px-4 py-3.5 text-xs leading-relaxed sm:px-6">
           <InfoIcon className="mt-px size-3.5 shrink-0" />
           <span>
             Holdings describe what is in an account. The account&rsquo;s value

@@ -86,7 +86,7 @@ export default async function Page() {
       {/* Constrained here rather than on a shared wrapper: the header bar is
           deliberately full-bleed so its bottom border spans the viewport, and
           only the dashboard content is centered under it. */}
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-8 pt-7 pb-12">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 pt-5 pb-12 sm:gap-5 sm:px-6 sm:pt-7 lg:px-8">
         <NetWorthSection netWorth={rollups.netWorth} series={series} />
 
         <SummarySection
@@ -100,13 +100,15 @@ export default async function Page() {
 
         <AccountsSection rollups={rollups} />
 
-        {/* `HoldingsSection` renders nothing without holdings, so the second
-            column would otherwise sit empty and strand the transactions card
-            two thirds of the way across. */}
+        {/* One column until `lg`: the transactions table needs the full width
+            before it starts scrolling sideways. `HoldingsSection` renders
+            nothing without holdings, so above `lg` the second column would
+            otherwise sit empty and strand the transactions card two thirds of
+            the way across. */}
         <div
           className={cn(
-            'grid gap-5',
-            holdings.length > 0 && 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
+            'grid grid-cols-[minmax(0,1fr)] gap-4 sm:gap-5',
+            holdings.length > 0 && 'lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
           )}
         >
           <TransactionsSection transactions={recent} categories={categories} />

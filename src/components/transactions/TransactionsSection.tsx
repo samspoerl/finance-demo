@@ -34,58 +34,65 @@ export function TransactionsSection({
           connected.
         </p>
       ) : (
-        <div className="flex flex-col">
-          <div className="border-border-soft text-foreground-subtle grid grid-cols-[84px_minmax(0,1fr)_180px_120px] gap-3 border-b px-6 py-2.5 text-[11px] font-medium tracking-wider uppercase">
-            <span>Date</span>
-            <span>Description</span>
-            <span>Category</span>
-            <span className="text-right">Amount</span>
-          </div>
-
-          {transactions.map((transaction) => (
-            <div
-              key={transaction.id}
-              className="border-border-soft grid grid-cols-[84px_minmax(0,1fr)_180px_120px] items-center gap-3 border-b px-6 py-3 last:border-b-0"
-            >
-              <span className="text-foreground-muted tabular text-[13px]">
-                {new Date(`${transaction.date}T00:00:00Z`).toLocaleDateString(
-                  'en-US',
-                  {
-                    month: 'short',
-                    day: 'numeric',
-                    timeZone: 'UTC',
-                  }
-                )}
-              </span>
-
-              <span className="truncate text-[13px]">
-                {transaction.merchantName ?? transaction.description}
-              </span>
-
-              <span className="justify-self-start">
-                <TransactionCategoryMenu
-                  transactionId={transaction.id}
-                  type={transaction.type}
-                  categoryId={transaction.categoryId}
-                  categoryName={transaction.category?.subcategory ?? null}
-                  categories={categories}
-                />
-              </span>
-
-              <span
-                className={
-                  transaction.type === 'excluded'
-                    ? 'text-foreground-subtle tabular text-right text-[13px]'
-                    : transaction.amount > 0
-                      ? 'text-positive tabular text-right text-[13px]'
-                      : 'tabular text-right text-[13px]'
-                }
-              >
-                {transaction.amount > 0 ? '+' : ''}
-                {formatTransaction(transaction.amount)}
-              </span>
+        // Four columns of which three are fixed-width do not fit a phone, and
+        // dropping one loses the point of the table. So the rows scroll
+        // sideways inside the card instead of widening the page: `min-w`
+        // holds the grid at its natural size and the wrapper clips it. Safe
+        // for the category menu, which portals out to `<body>`.
+        <div className="overflow-x-auto">
+          <div className="flex min-w-[600px] flex-col">
+            <div className="border-border-soft text-foreground-subtle grid grid-cols-[84px_minmax(0,1fr)_180px_120px] gap-3 border-b px-4 py-2.5 text-[11px] font-medium tracking-wider uppercase sm:px-6">
+              <span>Date</span>
+              <span>Description</span>
+              <span>Category</span>
+              <span className="text-right">Amount</span>
             </div>
-          ))}
+
+            {transactions.map((transaction) => (
+              <div
+                key={transaction.id}
+                className="border-border-soft grid grid-cols-[84px_minmax(0,1fr)_180px_120px] items-center gap-3 border-b px-4 py-3 last:border-b-0 sm:px-6"
+              >
+                <span className="text-foreground-muted tabular text-[13px]">
+                  {new Date(`${transaction.date}T00:00:00Z`).toLocaleDateString(
+                    'en-US',
+                    {
+                      month: 'short',
+                      day: 'numeric',
+                      timeZone: 'UTC',
+                    }
+                  )}
+                </span>
+
+                <span className="truncate text-[13px]">
+                  {transaction.merchantName ?? transaction.description}
+                </span>
+
+                <span className="justify-self-start">
+                  <TransactionCategoryMenu
+                    transactionId={transaction.id}
+                    type={transaction.type}
+                    categoryId={transaction.categoryId}
+                    categoryName={transaction.category?.subcategory ?? null}
+                    categories={categories}
+                  />
+                </span>
+
+                <span
+                  className={
+                    transaction.type === 'excluded'
+                      ? 'text-foreground-subtle tabular text-right text-[13px]'
+                      : transaction.amount > 0
+                        ? 'text-positive tabular text-right text-[13px]'
+                        : 'tabular text-right text-[13px]'
+                  }
+                >
+                  {transaction.amount > 0 ? '+' : ''}
+                  {formatTransaction(transaction.amount)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </Card>
