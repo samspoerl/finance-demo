@@ -64,8 +64,8 @@ importers:
         specifier: ^8.22.0
         version: 8.23.0
       plaid:
-        specifier: ^42.2.0
-        version: 42.2.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
+        specifier: ^46.0.0
+        version: 46.0.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       pluralize:
         specifier: ^8.0.0
         version: 8.0.0
@@ -3132,8 +3132,8 @@ packages:
   pkg-types@2.3.1:
     resolution: {integrity: sha512-y+ichcgc2LrADuhLNAx8DFjVfgz91pRxfZdI3UDhxHvcVEZsenLO+7XaU5vOp0u/7V/wZ+plyuQxtrDlZJ+yeg==}
 
-  plaid@42.2.0:
-    resolution: {integrity: sha512-5SI9gobmmN1UYCpk80yOGB6Kb391bKvssKa4TuIP4G9z/+nBKH7z+j32gK8TH/rr41RGMVvC3ISauKe7uK2Jyg==}
+  plaid@46.0.0:
+    resolution: {integrity: sha512-MMLtie70amJjZdrislGohyG9hkm30X3tdPNUD/cC62kGXZsvOlc8N2hWeg2tJBG99iPRW6xxfL3HrJUkvVeHQg==}
     engines: {node: '>=10.0.0'}
 
   pluralize@8.0.0:
@@ -6668,7 +6668,7 @@ snapshots:
       exsolve: 1.1.1
       pathe: 2.0.3
 
-  plaid@42.2.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0):
+  plaid@46.0.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0):
     dependencies:
       axios: 1.20.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
     transitivePeerDependencies:
