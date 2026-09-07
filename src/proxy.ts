@@ -27,11 +27,21 @@ export async function proxy(request: NextRequest) {
 
   const setCookies = response.headers.getSetCookie()
 
-  if (setCookies.length === 0) {
-    // Rate-limited, or the database is down. Falling through renders the
-    // signed-out state, which beats a 500 on a demo someone just opened.
+  if (!response.ok || !setCookies.some(isSessionCookie)) {
+    // The database is down, or something in front of the deployment answered
+    // instead of the app. Falling through renders the signed-out state, which
+    // beats a 500 on a demo someone just opened.
+    //
+    // "Did anything set a cookie?" is the wrong question, and asking it cost a
+    // silent afternoon: Vercel's deployment protection answers this POST with
+    // 401 *and* a `_vercel_sso_nonce` cookie, because the call is made by the
+    // server and carries none of the browser's credentials. A length check
+    // reads that as success, replays an SSO nonce as though it were a session,
+    // and logs nothing while the page renders signed out. Name the cookie that
+    // actually matters instead.
     console.error(
-      `Anonymous sign-in failed: ${response.status} ${response.statusText}`
+      `Anonymous sign-in failed: ${response.status} ${response.statusText} ` +
+        `(set-cookie: ${setCookies.map(cookieName).join(', ') || 'none'})`
     )
     return NextResponse.next()
   }
@@ -60,6 +70,19 @@ export async function proxy(request: NextRequest) {
   }
   return next
 }
+
+/**
+ * Better Auth's session cookie, under every name it can arrive as: it prepends
+ * `__Secure-` over HTTPS, and accepts either separator after the prefix. The
+ * prefix itself is the library default — the auth config does not set
+ * `advanced.cookiePrefix`, and this has to be updated with it if it ever does.
+ */
+const SESSION_COOKIE = /^(__Secure-)?better-auth[.-]session_token$/
+
+const cookieName = (cookie: string) => cookie.split(';')[0].split('=')[0].trim()
+
+const isSessionCookie = (cookie: string) =>
+  SESSION_COOKIE.test(cookieName(cookie))
 
 /**
  * Asks Better Auth whether the cookie actually resolves to a user, rather than

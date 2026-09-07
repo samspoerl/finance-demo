@@ -14,6 +14,19 @@ import { anonymous } from 'better-auth/plugins/anonymous'
  * visitor generated themselves.
  */
 export const auth = betterAuth({
+  // Preview deployments get a fresh hostname per deploy, so no fixed
+  // BETTER_AUTH_URL can name them and Better Auth warns that it is deriving the
+  // origin from the request. `VERCEL_URL` is that hostname.
+  //
+  // Gated on `VERCEL_ENV` rather than on `VERCEL_URL` being present: in
+  // production that variable holds the deployment's own `*.vercel.app` URL, not
+  // the custom domain, so falling back to it there would quietly move the app's
+  // identity off the domain visitors actually use.
+  baseURL:
+    process.env.BETTER_AUTH_URL ??
+    (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : undefined),
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
