@@ -28,7 +28,7 @@
     "seed:categories": "tsx scripts/seed-categories.ts"
   },
   "dependencies": {
-    "@base-ui/react": "^1.7.0",
+    "@base-ui/react": "^1.8.0",
     "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.9.1",
