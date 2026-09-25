@@ -92,4 +92,5 @@ Five lines there are load-bearing and easy to break:
 - **The net worth walk inverts for liabilities.** A sign error does not throw — it draws a smooth curve pointing the wrong way.
 - **The integration suite TRUNCATEs.** Three guards keep it on the local container; the database name `personal_finance_demo_test` is load-bearing in `compose.yaml`, `support/guard.ts`, `vitest.integration.config.mts`, and `ci.yml`.
 - **`react-hooks/purity` rejects `Date.now()` in a Server Component.** Push the clock read down into the lib or db function.
+- **Better Auth `modelName` is the Prisma client property, not the schema model.** `user`, not `User`; `userAccount`, not `UserAccount`. The adapter does `prisma[modelName]`, the option is typed `string`, and the failure is a runtime `Prisma schema mismatch / Missing tables` on every request — so `tsc` cannot catch it. `test/unit/lib/auth/model-name.test.ts` does, with no database.
 - **Two id conventions, deliberately.** Better Auth owns `User`, `Session`, `UserAccount`, `Verification` and generates string ids; everything app-owned keeps `Int @default(autoincrement())`.

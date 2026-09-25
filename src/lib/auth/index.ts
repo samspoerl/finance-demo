@@ -42,11 +42,17 @@ export const auth = betterAuth({
       '/sign-in/anonymous': { window: 60, max: 5 },
     },
   },
+  // `modelName` is the Prisma *client property*, not the schema model, and it
+  // is used verbatim — the adapter reaches for `prisma[modelName]`. Prisma
+  // exposes `model User` as `prisma.user`, so these are camelCase while the
+  // schema keeps PascalCase. Capitalizing one here does not fail to typecheck;
+  // it fails at the first query, with `Prisma schema mismatch / Missing tables`
+  // pointing at a `prisma generate` that already ran.
   user: {
-    modelName: 'User',
+    modelName: 'user',
   },
   session: {
-    modelName: 'Session',
+    modelName: 'session',
     // A week, where the private app uses ten minutes. There is nothing here
     // worth a short window, and a visitor returning to an open tab should not
     // find the demo empty. `updateAge` also sets how often `updatedAt` moves,
@@ -55,10 +61,10 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
   },
   account: {
-    modelName: 'UserAccount',
+    modelName: 'userAccount',
   },
   verification: {
-    modelName: 'Verification',
+    modelName: 'verification',
   },
 })
 
