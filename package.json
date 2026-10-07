@@ -38,7 +38,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.3.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.3",
     "jose": "^6.2.12",
     "js-sha256": "^1.0.0",
     "lucide-react": "^1.51.0",
